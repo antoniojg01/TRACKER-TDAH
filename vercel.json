@@ -32,7 +32,6 @@
     }
   ],
   
-  
   "headers": [
     {
       "source": "/assets/(.*)",
