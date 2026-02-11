@@ -46,12 +46,6 @@
   
   "regions": ["iad1"],
   
-  "functions": {
-    "supabase/functions/server/*.tsx": {
-      "memory": 1024,
-      "maxDuration": 10
-    }
-  },
   
   "github": {
     "enabled": true,
