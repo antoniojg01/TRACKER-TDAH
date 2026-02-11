@@ -35,7 +35,7 @@
   
   "headers": [
     {
-      "source": "/assets/(.*)",
+      "regex": "^/assets/(.*)$",
       "headers": [
         {
           "key": "Cache-Control",
@@ -48,7 +48,7 @@
       ]
     },
     {
-      "source": "/(.*\\.(js|mjs))",
+      "regex": "^/(.*\\.(js|mjs))$",
       "headers": [
         {
           "key": "Content-Type",
@@ -65,7 +65,7 @@
       ]
     },
     {
-      "source": "/(.*\\.css)",
+      "regex": "^/(.*\\.css)$",
       "headers": [
         {
           "key": "Content-Type",
@@ -82,7 +82,7 @@
       ]
     },
     {
-      "source": "/(.*\\.(woff2?|ttf|otf|eot))",
+      "regex": "^/(.*\\.(woff2?|ttf|otf|eot))$",
       "headers": [
         {
           "key": "Content-Type",
@@ -103,7 +103,7 @@
       ]
     },
     {
-      "source": "/(.*\\.(jpg|jpeg|png|gif|webp|svg|ico))",
+      "regex": "^/(.*\\.(jpg|jpeg|png|gif|webp|svg|ico))$",
       "headers": [
         {
           "key": "Cache-Control",
@@ -116,7 +116,7 @@
       ]
     },
     {
-      "source": "/manifest.json",
+      "regex": "^/manifest\\.json$",
       "headers": [
         {
           "key": "Content-Type",
@@ -129,7 +129,7 @@
       ]
     },
     {
-      "source": "/robots.txt",
+      "regex": "^/robots\\.txt$",
       "headers": [
         {
           "key": "Content-Type",
@@ -142,7 +142,7 @@
       ]
     },
     {
-      "source": "/index.html",
+      "regex": "^/index\\.html$",
       "headers": [
         {
           "key": "Cache-Control",
@@ -163,7 +163,7 @@
       ]
     },
     {
-      "source": "/(.*)",
+      "regex": "^/(.*)$",
       "headers": [
         {
           "key": "X-DNS-Prefetch-Control",
