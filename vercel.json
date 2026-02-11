@@ -4,7 +4,7 @@
   "name": "cronos-time-evolution",
   "alias": ["cronos"],
   
-  "buildCommand": "npx vite build",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
