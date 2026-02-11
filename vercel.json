@@ -47,7 +47,7 @@
   "regions": ["iad1"],
   
   "functions": {
-    "api/**/*.js": {
+    "supabase/functions/server/*.tsx": {
       "memory": 1024,
       "maxDuration": 10
     }
