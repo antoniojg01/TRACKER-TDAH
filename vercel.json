@@ -12,8 +12,7 @@
   
   "build": {
     "env": {
-      "NODE_ENV": "production",
-      "VITE_BUILD_TIME": "@vercel-build-timestamp"
+      "NODE_ENV": "production"
     }
   },
   
