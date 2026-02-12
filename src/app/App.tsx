@@ -10,6 +10,8 @@ import {
   loadStats, 
   saveBooks, 
   loadBooks,
+  saveStories,
+  loadStories,
   saveLinks,
   loadLinks,
   saveProducts,
@@ -24,6 +26,7 @@ import GoogleDrivePanel from '@/app/components/GoogleDrivePanel';
 import TimerModal from '@/app/components/TimerModal';
 import UniverseVisual from '@/app/components/UniverseVisual';
 import FastReader from '@/app/components/FastReader';
+import MangaReader from '@/app/components/MangaReader';
 import { StoryBuilder } from '@/app/components/StoryBuilder';
 
 // Expose Firebase sync function to window for debugging
@@ -31,7 +34,7 @@ if (typeof window !== 'undefined') {
   (window as any).testFirebaseConnection = forceFirebaseSync;
 }
 
-type MainView = 'DASHBOARD' | 'EVOLUTION' | 'STATISTICS' | 'LINKS' | 'READER' | 'STORIES' | 'SHOPPING';
+type MainView = 'DASHBOARD' | 'EVOLUTION' | 'STATISTICS' | 'LINKS' | 'READER' | 'MANGA' | 'STORIES' | 'SHOPPING';
 
 const PERIODS: Period[] = [
   { id: 'p1', name: 'Manhã' }, 
@@ -58,6 +61,11 @@ const NEBULA_PRESETS: NebulaTheme[] = [
 ];
 
 const App: React.FC = () => {
+  // Login States
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [stats, setStats] = useState<UserStats>({ 
     xp: 0, 
@@ -107,6 +115,31 @@ const App: React.FC = () => {
 
   const currentLevel = useMemo(() => LEVELS.find(l => l.level === stats.level) || LEVELS[0], [stats.level]);
   const nextLevel = useMemo(() => LEVELS.find(l => l.level === stats.level + 1), [stats.level]);
+
+  // Login Logic
+  useEffect(() => {
+    const auth = localStorage.getItem('isAuthenticated');
+    if (auth === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (username === 'EON' && password === '0130') {
+      setIsAuthenticated(true);
+      localStorage.setItem('isAuthenticated', 'true');
+    } else {
+      alert('Credenciais inválidas. Tente novamente.');
+    }
+  };
+  
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('isAuthenticated');
+    setUsername('');
+    setPassword('');
+  };
 
   // Calculate period totals for purchases
   const periodTotals = useMemo(() => {
@@ -191,10 +224,11 @@ const App: React.FC = () => {
       
       try {
         // Tentar carregar do Firebase
-        const [loadedStats, loadedTasks, loadedBooks, loadedLinks, loadedProducts, loadedPurchases] = await Promise.all([
+        const [loadedStats, loadedTasks, loadedBooks, loadedStories, loadedLinks, loadedProducts, loadedPurchases] = await Promise.all([
           loadStats(),
           loadTasks(),
           loadBooks(),
+          loadStories(),
           loadLinks(),
           loadProducts(),
           loadPurchases()
@@ -204,6 +238,7 @@ const App: React.FC = () => {
         let finalStats = loadedStats;
         let finalTasks = loadedTasks;
         let finalBooks = loadedBooks;
+        let finalStories = loadedStories;
         let finalLinks = loadedLinks;
         let finalProducts = loadedProducts;
         let finalPurchases = loadedPurchases;
@@ -217,6 +252,11 @@ const App: React.FC = () => {
         if (finalBooks && finalBooks.length > 0) {
           setBooks(finalBooks);
           console.log('📚 Books carregados:', finalBooks.length);
+        }
+
+        if (finalStories && finalStories.length > 0) {
+          setStories(finalStories);
+          console.log('📖 Stories carregadas:', finalStories.length);
         }
 
         // Load saved links from Firebase
@@ -335,6 +375,7 @@ const App: React.FC = () => {
         localStorage.setItem('cronos_tasks', JSON.stringify(tasks));
         localStorage.setItem('cronos_stats', JSON.stringify(stats));
         localStorage.setItem('cronos_books', JSON.stringify(books));
+        localStorage.setItem('cronos_stories', JSON.stringify(stories));
         localStorage.setItem('cronos_links', JSON.stringify(savedLinks));
         localStorage.setItem('cronos_products', JSON.stringify(products));
         localStorage.setItem('cronos_purchases', JSON.stringify(purchases));
@@ -347,6 +388,8 @@ const App: React.FC = () => {
       saveTasks(tasks).catch(() => {});
       saveStats(stats).catch(() => {});
       saveBooks(books).catch(() => {});
+      saveStories(stories).catch(() => {});
+      saveLinks(savedLinks).catch(() => {});
       saveProducts(products).catch(() => {});
       savePurchases(purchases).catch(() => {});
     };
@@ -399,7 +442,7 @@ const App: React.FC = () => {
       window.removeEventListener('pagehide', handlePageHide);
       window.removeEventListener('blur', handleBlur);
     };
-  }, [tasks, stats, books, savedLinks, isLoading]);
+  }, [tasks, stats, books, stories, savedLinks, products, purchases, isLoading]);
 
   useEffect(() => {
     if ((window as any).hideAppLoader) (window as any).hideAppLoader();
@@ -418,6 +461,15 @@ const App: React.FC = () => {
       saveLinks(savedLinks);
     }
   }, [savedLinks, isLoading]);
+
+  // Save stories to Firebase whenever they change
+  useEffect(() => {
+    if (!isLoading && stories.length >= 0) {
+      saveStories(stories);
+      // Also save to localStorage as backup
+      localStorage.setItem('cronos_stories', JSON.stringify(stories));
+    }
+  }, [stories, isLoading]);
 
   // Save products to Firebase whenever they change
   useEffect(() => {
@@ -761,6 +813,7 @@ const App: React.FC = () => {
       tasks: tasks.length,
       stats: `Level ${stats.level}`,
       books: books.length,
+      stories: stories.length,
       links: savedLinks.length,
       products: products.length,
       purchases: purchases.length
@@ -795,6 +848,7 @@ const App: React.FC = () => {
         saveTasks(tasks),
         saveStats(stats),
         saveBooks(books),
+        saveStories(stories),
         saveLinks(savedLinks),
         saveProducts(products),
         savePurchases(purchases)
@@ -808,6 +862,7 @@ const App: React.FC = () => {
         `📋 Tasks: ${tasks.length}\n` +
         `⭐ Stats: Level ${stats.level} (${stats.xp} XP)\n` +
         `📚 Books: ${books.length}\n` +
+        `📖 Stories: ${stories.length}\n` +
         `🔗 Links: ${savedLinks.length}\n` +
         `📦 Produtos: ${products.length}\n` +
         `🛒 Compras: ${purchases.length}\n\n` +
@@ -1039,25 +1094,78 @@ const App: React.FC = () => {
     }
   }, [books, isLoading]);
 
-  // Load and save stories to localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem('cronos_stories');
-    if (stored) {
-      try {
-        setStories(JSON.parse(stored));
-      } catch(e) {}
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isLoading) {
-      localStorage.setItem('cronos_stories', JSON.stringify(stories));
-    }
-  }, [stories, isLoading]);
+  // Stories are loaded from Firebase with localStorage fallback in loadData
 
   const priorityLabels = { 1: "ALTA", 2: "MÉDIA", 3: "BAIXA" };
   const priorityColors = { 1: "bg-red-500", 2: "bg-indigo-500", 3: "bg-slate-700" };
   const priorityText = { 1: "text-red-400", 2: "text-indigo-400", 3: "text-slate-500" };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white relative overflow-hidden font-inter selection:bg-purple-500/30">
+        {/* Animated Background Effects */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+           <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] animate-pulse" />
+           <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+
+        <form onSubmit={handleLogin} className="z-10 bg-slate-900/80 p-10 rounded-3xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-sm relative overflow-hidden backdrop-blur-xl">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+          
+          <div className="mb-10 text-center relative group">
+             <div className="absolute inset-0 bg-indigo-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+             <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 font-space tracking-tight relative z-10">CRONOS</h2>
+             <p className="text-[10px] text-slate-500 font-mono tracking-[0.3em] uppercase mt-2">Sistema de Gestão Temporal</p>
+          </div>
+          
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Identidade</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full pl-4 pr-4 py-3.5 bg-slate-950/50 border border-slate-700/50 rounded-xl focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 text-slate-200 transition-all placeholder-slate-600/50 text-sm font-medium"
+                  placeholder="Nome de usuário"
+                  autoFocus
+                />
+                <div className="absolute inset-0 rounded-xl bg-indigo-500/5 pointer-events-none"></div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Chave de Acesso</label>
+              <div className="relative">
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-4 pr-4 py-3.5 bg-slate-950/50 border border-slate-700/50 rounded-xl focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 text-slate-200 transition-all placeholder-slate-600/50 text-sm font-medium"
+                  placeholder="Senha"
+                />
+                 <div className="absolute inset-0 rounded-xl bg-purple-500/5 pointer-events-none"></div>
+              </div>
+            </div>
+          </div>
+          
+          <button 
+            type="submit" 
+            className="w-full mt-10 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 px-4 rounded-xl transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-indigo-900/30 flex items-center justify-center gap-2 group"
+          >
+            <span>Inicializar Sistema</span>
+            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+          </button>
+          
+          <div className="mt-8 text-center flex justify-center gap-4 opacity-30 grayscale hover:grayscale-0 transition-all duration-500">
+             <div className="h-1 w-1 rounded-full bg-indigo-500"></div>
+             <div className="h-1 w-1 rounded-full bg-purple-500"></div>
+             <div className="h-1 w-1 rounded-full bg-pink-500"></div>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[100dvh] w-full flex flex-col md:flex-row bg-[#020617] text-slate-200 overflow-hidden font-inter select-none relative">
@@ -1311,6 +1419,27 @@ const App: React.FC = () => {
             )}
           </button>
           
+          {/* Manga Reader Button */}
+          <button 
+            onClick={() => setMainView('MANGA')} 
+            className={`relative flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all duration-300 group ${
+              mainView === 'MANGA' 
+                ? 'text-red-400 scale-110 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.3)]' 
+                : 'text-slate-500 hover:text-red-300 hover:scale-105'
+            }`}
+          >
+            {mainView === 'MANGA' && (
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-red-500/20 to-pink-500/10 border border-red-500/30" />
+            )}
+            <svg className={`w-6 h-6 relative z-10 transition-all duration-300 ${mainView === 'MANGA' ? 'drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'group-hover:drop-shadow-[0_0_4px_rgba(239,68,68,0.4)]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+              <path strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            <span className="text-[6px] font-black uppercase tracking-[0.2em] md:hidden relative z-10">Manga</span>
+            {mainView === 'MANGA' && (
+              <div className="absolute -bottom-1 md:bottom-auto md:-right-1 left-1/2 md:left-auto md:top-1/2 -translate-x-1/2 md:translate-x-0 md:-translate-y-1/2 w-6 md:w-1 h-1 md:h-6 bg-gradient-to-r md:bg-gradient-to-b from-red-500 to-pink-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+            )}
+          </button>
+          
           {/* Shopping Button */}
           <button 
             onClick={() => setMainView('SHOPPING')} 
@@ -1330,6 +1459,17 @@ const App: React.FC = () => {
             {mainView === 'SHOPPING' && (
               <div className="absolute -bottom-1 md:bottom-auto md:-right-1 left-1/2 md:left-auto md:top-1/2 -translate-x-1/2 md:translate-x-0 md:-translate-y-1/2 w-6 md:w-1 h-1 md:h-6 bg-gradient-to-r md:bg-gradient-to-b from-amber-500 to-yellow-500 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
             )}
+          </button>
+          
+          {/* Logout Button */}
+          <button 
+            onClick={handleLogout} 
+            className="relative flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all duration-300 group text-slate-500 hover:text-red-400 hover:scale-105 md:mt-auto"
+            title="Sair do Sistema"
+          >
+            <svg className="w-6 h-6 relative z-10 group-hover:drop-shadow-[0_0_4px_rgba(248,113,113,0.4)] transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
           </button>
       </nav>
 
@@ -1865,6 +2005,10 @@ const App: React.FC = () => {
             onSyncBooks={handleSyncBooks}
             cloudStatus={cloudStatus}
           />
+        )}
+
+        {mainView === 'MANGA' && (
+          <MangaReader cloudStatus={cloudStatus} />
         )}
 
         {mainView === 'STORIES' && (

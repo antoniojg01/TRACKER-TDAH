@@ -3,6 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -28,9 +29,10 @@ const db = initializeFirestore(app, {
 });
 
 const auth = getAuth(app);
+const storage = getStorage(app);
 
 console.log('🔥 Firebase inicializado com sucesso!');
 console.log('✅ Persistência offline ativada com suporte a múltiplas abas!');
 console.log('📦 Project ID:', firebaseConfig.projectId);
 
-export { app, analytics, db, auth };
+export { app, analytics, db, auth, storage };

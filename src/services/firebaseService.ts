@@ -422,6 +422,14 @@ export const migrateFromLocalStorage = async (): Promise<void> => {
       await saveBooks(books);
       console.log('✅ Books migrados!');
     }
+
+    // Migrate stories
+    const localStories = localStorage.getItem('cronos_stories');
+    if (localStories) {
+      const stories = JSON.parse(localStories);
+      await saveStories(stories);
+      console.log('✅ Stories migradas!');
+    }
     
     // Migrate links
     const localLinks = localStorage.getItem('cronos_links');
