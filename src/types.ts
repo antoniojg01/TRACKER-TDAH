@@ -52,3 +52,26 @@ export interface PurchaseItem {
   profit: number; // Lucro calculado (salePrice - pricePaid)
   createdAt: number;
 }
+
+// 📖 READING PROGRESS - Salvando progresso de leitura
+export interface MangaReadingProgress {
+  mangaId: string;
+  mangaTitle: string;
+  currentPage: number;
+  totalPages: number;
+  readingMode: 'RTL' | 'LTR';
+  webtoonMode: boolean;
+  scale: number;
+  lastReadAt: number;
+  completedAt?: number;
+}
+
+export interface BookReadingProgress {
+  bookId: string;
+  bookTitle: string;
+  currentPosition: number;
+  totalWords: number;
+  wpm: number;
+  lastReadAt: number;
+  completedAt?: number;
+}

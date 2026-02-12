@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MangaMeta, uploadMangaFromImages, loadMangaList, loadMangaPages } from '@/services/mangaService';
+import { saveMangaProgress, loadMangaProgress } from '@/services/firebaseService';
+import type { MangaReadingProgress } from '@/types';
 
 interface MangaReaderProps {
   cloudStatus?: 'synced' | 'syncing' | 'offline';
@@ -80,13 +82,29 @@ const MangaReader: React.FC<MangaReaderProps> = ({ cloudStatus = 'synced' }) => 
     setIsLoading(true);
     try {
       const pages = await loadMangaPages(manga.id);
+      
+      // Carregar progresso anterior
+      let savedProgress = await loadMangaProgress(manga.id);
+      let startPage = 0;
+      let savedMode: 'RTL' | 'LTR' = 'RTL';
+      let savedWebtoon = false;
+      let savedScale = 100;
+      
+      if (savedProgress && !savedProgress.completedAt) {
+        startPage = savedProgress.currentPage;
+        savedMode = savedProgress.readingMode;
+        savedWebtoon = savedProgress.webtoonMode;
+        savedScale = savedProgress.scale;
+        console.log(`📖 Retomando ${manga.id} na página ${startPage}...`);
+      }
+      
       setReadingState({
         manga,
         pages,
-        currentPage: 0,
-        scale: 100,
-        readingMode: 'RTL',
-        webtoonMode: false
+        currentPage: startPage,
+        scale: savedScale,
+        readingMode: savedMode,
+        webtoonMode: savedWebtoon
       });
       setView('READING');
     } catch (error) {
@@ -175,6 +193,34 @@ const MangaReader: React.FC<MangaReaderProps> = ({ cloudStatus = 'synced' }) => 
     window.addEventListener('keydown', handleKeydown);
     return () => window.removeEventListener('keydown', handleKeydown);
   }, [view, readingState]);
+
+  // 💾 AUTO-SAVE progresso de leitura
+  useEffect(() => {
+    if (!readingState || view !== 'READING') return;
+
+    const saveProgress = async () => {
+      const progress: MangaReadingProgress = {
+        mangaId: readingState.manga.id,
+        mangaTitle: readingState.manga.title,
+        currentPage: readingState.currentPage,
+        totalPages: readingState.pages.length,
+        readingMode: readingState.readingMode,
+        webtoonMode: readingState.webtoonMode,
+        scale: readingState.scale,
+        lastReadAt: Date.now()
+      };
+
+      try {
+        await saveMangaProgress(progress);
+      } catch (error) {
+        console.error('Erro ao salvar progresso:', error);
+      }
+    };
+
+    // Salvar logo após mudança (debounce de 500ms)
+    const timer = setTimeout(saveProgress, 500);
+    return () => clearTimeout(timer);
+  }, [readingState, view]);
 
   // VIEW: UPLOAD
   if (view === 'UPLOAD') {

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Book } from '@/types';
+import { saveBookProgress, loadBookProgress } from '@/services/firebaseService';
+import type { BookReadingProgress } from '@/types';
 import JSZip from 'jszip';
 
 interface FastReaderProps {
@@ -176,16 +178,56 @@ const FastReader: React.FC<FastReaderProps> = ({ books, onSaveBook, onDeleteBook
     }
   }, [isPlaying, currentBook?.wpm]);
 
-  // Save current book progress
+  // Save current book progress (both locally and to Firebase)
   useEffect(() => {
     if (currentBook && currentBook.currentPosition > 0) {
       onSaveBook(currentBook);
+      
+      // 💾 AUTO-SAVE progresso no Firebase
+      const saveProgress = async () => {
+        const progress: BookReadingProgress = {
+          bookId: currentBook.id,
+          bookTitle: currentBook.title,
+          currentPosition: currentBook.currentPosition,
+          totalWords: currentBook.totalWords,
+          wpm: currentBook.wpm,
+          lastReadAt: Date.now(),
+          completedAt: currentBook.completed ? currentBook.completedAt : undefined
+        };
+        
+        try {
+          await saveBookProgress(progress);
+        } catch (error) {
+          console.error('Erro ao salvar progresso no Firebase:', error);
+        }
+      };
+
+      // Salvar a cada 5 segundos (debounce)
+      const timer = setTimeout(saveProgress, 5000);
+      return () => clearTimeout(timer);
     }
-  }, [currentBook?.currentPosition]);
+  }, [currentBook?.currentPosition, currentBook?.wpm]);
 
   const goToBook = (book: Book) => {
     setCurrentBook(book);
     setView('READING');
+    
+    // Carregar progresso anterior
+    (async () => {
+      try {
+        const savedProgress = await loadBookProgress(book.id);
+        if (savedProgress && !savedProgress.completedAt) {
+          setCurrentBook(prev => prev ? {
+            ...prev,
+            currentPosition: savedProgress.currentPosition,
+            wpm: savedProgress.wpm
+          } : null);
+          console.log(`📖 Retomando "${book.title}" na posição ${savedProgress.currentPosition}...`);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar progresso:', error);
+      }
+    })();
   };
 
   const completeBook = () => {

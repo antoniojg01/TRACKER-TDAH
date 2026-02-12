@@ -13,7 +13,7 @@ import {
   getDocFromCache,
   getDocFromServer
 } from 'firebase/firestore';
-import type { Task, UserStats, Book, Story, SavedLink, Product, PurchaseItem } from '@/types';
+import type { Task, UserStats, Book, Story, SavedLink, Product, PurchaseItem, MangaReadingProgress, BookReadingProgress } from '@/types';
 
 // Collection names
 const COLLECTIONS = {
@@ -23,7 +23,9 @@ const COLLECTIONS = {
   STORIES: 'stories',
   LINKS: 'links',
   PRODUCTS: 'products',
-  PURCHASES: 'purchases'
+  PURCHASES: 'purchases',
+  MANGA_PROGRESS: 'manga_progress',
+  BOOK_PROGRESS: 'book_progress'
 };
 
 // User ID - você pode mudar para autenticação real depois
@@ -378,6 +380,162 @@ export const loadPurchases = async (): Promise<PurchaseItem[]> => {
   } catch (error: any) {
     const local = localStorage.getItem('cronos_purchases');
     return local ? JSON.parse(local) : [];
+  }
+};
+
+// ========== MANGA READING PROGRESS ==========
+export const saveMangaProgress = async (progress: MangaReadingProgress): Promise<void> => {
+  try {
+    console.log('🔥 Firebase: Salvando progresso do manga...', progress.mangaTitle);
+    const progressRef = doc(db, COLLECTIONS.MANGA_PROGRESS, `${USER_ID}_${progress.mangaId}`);
+    await setDoc(progressRef, {
+      ...progress,
+      updatedAt: serverTimestamp()
+    });
+    console.log('✅ Firebase: Progresso do manga salvo com sucesso!');
+  } catch (error) {
+    console.error('❌ Firebase: Erro ao salvar progresso do manga:', error);
+    localStorage.setItem(`cronos_manga_progress_${progress.mangaId}`, JSON.stringify(progress));
+  }
+};
+
+export const loadMangaProgress = async (mangaId: string): Promise<MangaReadingProgress | null> => {
+  if (!firebaseAvailable && firebaseCheckAttempted) {
+    const local = localStorage.getItem(`cronos_manga_progress_${mangaId}`);
+    return local ? JSON.parse(local) : null;
+  }
+
+  try {
+    const progressRef = doc(db, COLLECTIONS.MANGA_PROGRESS, `${USER_ID}_${mangaId}`);
+    const docSnap = await getDocWithFallback(progressRef);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      // Remover o timestamp do servidor antes de retornar
+      const { updatedAt, ...progress } = data;
+      return progress as MangaReadingProgress;
+    }
+    
+    return null;
+  } catch (error: any) {
+    const local = localStorage.getItem(`cronos_manga_progress_${mangaId}`);
+    return local ? JSON.parse(local) : null;
+  }
+};
+
+export const loadAllMangaProgress = async (): Promise<MangaReadingProgress[]> => {
+  if (!firebaseAvailable && firebaseCheckAttempted) {
+    const allProgress = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('cronos_manga_progress_')) {
+        const data = localStorage.getItem(key);
+        if (data) allProgress.push(JSON.parse(data));
+      }
+    }
+    return allProgress;
+  }
+
+  try {
+    const q = query(collection(db, COLLECTIONS.MANGA_PROGRESS), where('userId', '==', USER_ID));
+    const querySnapshot = await getDocs(q);
+    const allProgress: MangaReadingProgress[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const { updatedAt, ...progress } = data;
+      allProgress.push(progress as MangaReadingProgress);
+    });
+    
+    return allProgress;
+  } catch (error: any) {
+    const allProgress = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('cronos_manga_progress_')) {
+        const data = localStorage.getItem(key);
+        if (data) allProgress.push(JSON.parse(data));
+      }
+    }
+    return allProgress;
+  }
+};
+
+// ========== BOOK READING PROGRESS ==========
+export const saveBookProgress = async (progress: BookReadingProgress): Promise<void> => {
+  try {
+    console.log('🔥 Firebase: Salvando progresso do livro...', progress.bookTitle);
+    const progressRef = doc(db, COLLECTIONS.BOOK_PROGRESS, `${USER_ID}_${progress.bookId}`);
+    await setDoc(progressRef, {
+      ...progress,
+      updatedAt: serverTimestamp()
+    });
+    console.log('✅ Firebase: Progresso do livro salvo com sucesso!');
+  } catch (error) {
+    console.error('❌ Firebase: Erro ao salvar progresso do livro:', error);
+    localStorage.setItem(`cronos_book_progress_${progress.bookId}`, JSON.stringify(progress));
+  }
+};
+
+export const loadBookProgress = async (bookId: string): Promise<BookReadingProgress | null> => {
+  if (!firebaseAvailable && firebaseCheckAttempted) {
+    const local = localStorage.getItem(`cronos_book_progress_${bookId}`);
+    return local ? JSON.parse(local) : null;
+  }
+
+  try {
+    const progressRef = doc(db, COLLECTIONS.BOOK_PROGRESS, `${USER_ID}_${bookId}`);
+    const docSnap = await getDocWithFallback(progressRef);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      // Remover o timestamp do servidor antes de retornar
+      const { updatedAt, ...progress } = data;
+      return progress as BookReadingProgress;
+    }
+    
+    return null;
+  } catch (error: any) {
+    const local = localStorage.getItem(`cronos_book_progress_${bookId}`);
+    return local ? JSON.parse(local) : null;
+  }
+};
+
+export const loadAllBookProgress = async (): Promise<BookReadingProgress[]> => {
+  if (!firebaseAvailable && firebaseCheckAttempted) {
+    const allProgress = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('cronos_book_progress_')) {
+        const data = localStorage.getItem(key);
+        if (data) allProgress.push(JSON.parse(data));
+      }
+    }
+    return allProgress;
+  }
+
+  try {
+    const q = query(collection(db, COLLECTIONS.BOOK_PROGRESS), where('userId', '==', USER_ID));
+    const querySnapshot = await getDocs(q);
+    const allProgress: BookReadingProgress[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const { updatedAt, ...progress } = data;
+      allProgress.push(progress as BookReadingProgress);
+    });
+    
+    return allProgress;
+  } catch (error: any) {
+    const allProgress = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('cronos_book_progress_')) {
+        const data = localStorage.getItem(key);
+        if (data) allProgress.push(JSON.parse(data));
+      }
+    }
+    return allProgress;
   }
 };
 

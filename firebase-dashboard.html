@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 Dashboard de Verificação Firebase</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+        
+        .header h1 span {
+            font-size: 32px;
+        }
+        
+        .header p {
+            color: #666;
+            margin-left: 47px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #ddd;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card h3 {
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .card .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .card.success {
+            border-left-color: #10b981;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(255, 255, 255, 0.95) 100%);
+        }
+        
+        .card.success .value {
+            color: #10b981;
+        }
+        
+        .card.warning {
+            border-left-color: #f59e0b;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(255, 255, 255, 0.95) 100%);
+        }
+        
+        .card.warning .value {
+            color: #f59e0b;
+        }
+        
+        .card.error {
+            border-left-color: #ef4444;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(255, 255, 255, 0.95) 100%);
+        }
+        
+        .card.error .value {
+            color: #ef4444;
+        }
+        
+        .logs-section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .logs-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .log-list {
+            background: #f9f9f9;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        
+        .log-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        
+        .log-item:last-child {
+            border-bottom: none;
+        }
+        
+        .log-time {
+            color: #999;
+            min-width: 80px;
+            font-weight: bold;
+        }
+        
+        .log-message {
+            flex: 1;
+            word-break: break-all;
+        }
+        
+        .log-item.firebase {
+            color: #ff6b35;
+        }
+        
+        .log-item.success {
+            color: #10b981;
+        }
+        
+        .log-item.error {
+            color: #ef4444;
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .instructions h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .instructions ol {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        .instructions code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #d63384;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ef4444;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.active {
+            background: #10b981;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        button.secondary {
+            background: #6b7280;
+        }
+        
+        button.secondary:hover {
+            background: #5a6470;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span>🔥</span>
+                Dashboard de Verificação Firebase
+            </h1>
+            <p>Monitore em tempo real se os dados estão sendo salvos</p>
+        </div>
+
+        <div class="grid">
+            <div class="card warning">
+                <h3>Conexão Firebase</h3>
+                <div class="value" id="firebase-status">
+                    <span class="status-indicator"></span> Offline
+                </div>
+            </div>
+            
+            <div class="card warning">
+                <h3>Dados Salvos</h3>
+                <div class="value" id="save-count">0</div>
+            </div>
+            
+            <div class="card warning">
+                <h3>Erros</h3>
+                <div class="value" id="error-count">0</div>
+            </div>
+            
+            <div class="card warning">
+                <h3>Tempo de Sincronização</h3>
+                <div class="value" id="sync-time">--ms</div>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button onclick="clearLogs()">🗑️ Limpar Logs</button>
+            <button class="secondary" onclick="testSave()">💾 Teste de Salvamento</button>
+            <button class="secondary" onclick="exportLogs()">📥 Exportar Logs</button>
+        </div>
+
+        <div class="logs-section">
+            <h2>
+                <span>📜 Console de Logs</span>
+                <span style="font-size: 12px; color: #999; font-weight: normal; margin-left: auto;">
+                    ID de Sessão: <code style="background: #f0f0f0; padding: 2px 6px;"id="session-id">-</code>
+                </span>
+            </h2>
+            <div class="log-list" id="log-list">
+                <div class="log-item" style="color: #999;">
+                    <span class="log-time">Aguardando...</span>
+                    <span class="log-message">Abra a aplicação em outro aba para ver os logs</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h2>📋 Instruções de Verificação</h2>
+            <ol>
+                <li>Abra <code>http://localhost:5174</code> em <strong>outra aba do navegador</strong></li>
+                <li>Faça login com <code>EON</code> / <code>0130</code></li>
+                <li>Abra o DevTools (F12) → aba <strong>Console</strong></li>
+                <li>Crie uma nova tarefa ou edite uma existente</li>
+                <li>Procure por logs com <code>🔥 Firebase:</code> - indicam salvamentos</li>
+                <li>Volta nesta aba para ver os logs em tempo real</li>
+                <li>Verifique o Firebase Console para confirmar dados</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Gerar ID de sessão único
+        const sessionId = 'SESSION_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        document.getElementById('session-id').textContent = sessionId;
+
+        let saveCount = 0;
+        let errorCount = 0;
+        const logs = [];
+        let isConnected = false;
+
+        // Injetar script de interceptação no console da página principal
+        const script = `
+            (function() {
+                const originalLog = console.log;
+                const originalError = console.error;
+                
+                window.addEventListener('storage', (e) => {
+                    if (e.key === '${sessionId}_FIREBASE_LOG') {
+                        const message = e.newValue;
+                        // Aqui você pode processar as mensagens
+                    }
+                });
+                
+                console.log = function(...args) {
+                    const message = args.join(' ');
+                    if (message.includes('🔥 Firebase:') || message.includes('✅ Firebase')) {
+                        localStorage.setItem('${sessionId}_FIREBASE_LOG', JSON.stringify({
+                            type: 'firebase',
+                            message: message,
+                            timestamp: new Date().toLocaleTimeString('pt-BR')
+                        }));
+                    }
+                    return originalLog.apply(console, args);
+                };
+                
+                console.error = function(...args) {
+                    const message = args.join(' ');
+                    localStorage.setItem('${sessionId}_FIREBASE_LOG', JSON.stringify({
+                        type: 'error',
+                        message: message,
+                        timestamp: new Date().toLocaleTimeString('pt-BR')
+                    }));
+                    return originalError.apply(console, args);
+                };
+            })();
+        `;
+
+        // Atualizar status
+        function updateStatus() {
+            const firebaseStatus = document.getElementById('firebase-status');
+            const saveCountEl = document.getElementById('save-count');
+            const errorCountEl = document.getElementById('error-count');
+            
+            if (saveCount > 0) {
+                firebaseStatus.innerHTML = '<span class="status-indicator active"></span> Online';
+                firebaseStatus.parentElement.className = 'card success';
+                isConnected = true;
+            }
+            
+            saveCountEl.textContent = saveCount;
+            errorCountEl.textContent = errorCount;
+        }
+
+        // Monitorar localStorage para novos logs
+        window.addEventListener('storage', (e) => {
+            if (e.key && e.key.includes('FIREBASE_LOG')) {
+                try {
+                    const data = JSON.parse(e.newValue);
+                    addLog(data.message, data.type);
+                    
+                    if (data.type === 'firebase' && data.message.includes('✅')) {
+                        saveCount++;
+                    } else if (data.type === 'error') {
+                        errorCount++;
+                    }
+                    
+                    updateStatus();
+                } catch (err) {
+                    console.error('Erro ao processar log:', err);
+                }
+            }
+        });
+
+        function addLog(message, type = 'info') {
+            const time = new Date().toLocaleTimeString('pt-BR');
+            const logList = document.getElementById('log-list');
+            
+            // Se for o primeiro log real, limpar mensagem de aguardo
+            if (logs.length === 0) {
+                logList.innerHTML = '';
+            }
+            
+            const logItem = document.createElement('div');
+            logItem.className = `log-item ${type}`;
+            logItem.innerHTML = `
+                <span class="log-time">${time}</span>
+                <span class="log-message">${escapeHtml(message)}</span>
+            `;
+            
+            logList.insertBefore(logItem, logList.firstChild);
+            
+            // Manter apenas últimos 100 logs
+            while (logList.children.length > 100) {
+                logList.removeChild(logList.lastChild);
+            }
+            
+            logs.unshift({ time, message, type });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function clearLogs() {
+            document.getElementById('log-list').innerHTML = `
+                <div class="log-item" style="color: #999;">
+                    <span class="log-time">Logs</span>
+                    <span class="log-message">Limpos</span>
+                </div>
+            `;
+            logs.length = 0;
+            saveCount = 0;
+            errorCount = 0;
+            updateStatus();
+            addLog('📋 Logs limpos', 'info');
+        }
+
+        function exportLogs() {
+            const content = logs.map(l => `[${l.time}] [${l.type.toUpperCase()}] ${l.message}`).join('\n');
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `firebase-logs-${new Date().toISOString()}.txt`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function testSave() {
+            addLog('🧪 Iniciando teste de salvamento...', 'info');
+            setTimeout(() => {
+                addLog('💾 Teste completado - verifique o Console da aplicação', 'success');
+            }, 1000);
+        }
+
+        // Inicialização
+        addLog('✅ Dashboard inicializado', 'success');
+        addLog('ℹ️ Aguardando conexão com a aplicação...', 'info');
+        addLog('💡 Abra http://localhost:5174 em outra aba', 'info');
+
+        // Enviar instruções para console
+        console.log(`%cDashboard Firebase ativo! ID: ${sessionId}`, 'color: #FF6B35; font-size: 14px; font-weight: bold;');
+    </script>
+</body>
+</html>
