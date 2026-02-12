@@ -243,20 +243,55 @@ const App: React.FC = () => {
   // Load data from Firebase on mount (com fallback para localStorage)
   useEffect(() => {
     const loadData = async () => {
-      setIsLoading(true);
-      console.log('🔄 Iniciando carregamento de dados do Firebase...');
+      console.log('🔄 Iniciando carregamento de dados...');
       
+      // ⚡ PASSO 1: Carregar do localStorage IMEDIATAMENTE (síncrono)
       try {
-        // Tentar carregar do Firebase
-        const [loadedStats, loadedTasks, loadedBooks, loadedStories, loadedLinks, loadedProducts, loadedPurchases] = await Promise.all([
-          loadStats(),
-          loadTasks(),
-          loadBooks(),
-          loadStories(),
-          loadLinks(),
-          loadProducts(),
-          loadPurchases()
-        ]);
+        const localStats = localStorage.getItem('cronos_stats');
+        const localTasks = localStorage.getItem('cronos_tasks');
+        const localBooks = localStorage.getItem('cronos_books');
+        const localStories = localStorage.getItem('cronos_stories');
+        const localLinks = localStorage.getItem('cronos_links');
+        const localProducts = localStorage.getItem('cronos_products');
+        const localPurchases = localStorage.getItem('cronos_purchases');
+
+        // Aplicar dados do cache/localStorage IMEDIATAMENTE
+        if (localStats) setStats(JSON.parse(localStats));
+        if (localTasks) setTasks(JSON.parse(localTasks));
+        if (localBooks) setBooks(JSON.parse(localBooks));
+        if (localStories) setStories(JSON.parse(localStories));
+        if (localLinks) setSavedLinks(JSON.parse(localLinks));
+        if (localProducts) setProducts(JSON.parse(localProducts));
+        if (localPurchases) setPurchases(JSON.parse(localPurchases));
+
+        console.log('✅ Dados em cache carregados imediatamente (localStorage)');
+      } catch (e) {
+        console.warn('⚠️ Erro ao carregar cache:', e);
+      }
+
+      // 🚫 Desligar loading screen IMEDIATAMENTE
+      setIsLoading(false);
+
+      // ⚡ PASSO 2: Carregar do Firebase em BACKGROUND
+      // Se falhar, já temos dados em cache. Se conseguir, atualiza silenciosamente.
+      try {
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Firebase timeout')), 5000)
+        );
+
+        // Tentar carregar do Firebase com timeout
+        const [loadedStats, loadedTasks, loadedBooks, loadedStories, loadedLinks, loadedProducts, loadedPurchases] = await Promise.race([
+          Promise.all([
+            loadStats(),
+            loadTasks(),
+            loadBooks(),
+            loadStories(),
+            loadLinks(),
+            loadProducts(),
+            loadPurchases()
+          ]),
+          timeoutPromise
+        ]) as any;
 
         // Aplicar dados carregados do Firebase
         let finalStats = loadedStats;
@@ -328,31 +363,14 @@ const App: React.FC = () => {
           });
 
           setTasks(processedTasks);
-          console.log('✅ Tasks processadas e carregadas:', processedTasks.length);
-        } else {
-          console.log('⚠️ Nenhuma task encontrada');
+          console.log('✅ Tasks processadas com Firebase:', processedTasks.length);
         }
+
+        console.log('🔥 Firebase background update completo!');
       } catch (error) {
-        console.error('❌ Erro ao carregar dados:', error);
-        
-        // 🔥 FALLBACK TOTAL: Se tudo falhar, carregar do localStorage
-        console.log('🆘 Tentando recuperação total do localStorage...');
-        try {
-          const localStats = localStorage.getItem('cronos_stats');
-          const localTasks = localStorage.getItem('cronos_tasks');
-          const localBooks = localStorage.getItem('cronos_books');
-          
-          if (localStats) setStats(JSON.parse(localStats));
-          if (localTasks) setTasks(JSON.parse(localTasks));
-          if (localBooks) setBooks(JSON.parse(localBooks));
-          
-          console.log('✅ Dados recuperados do localStorage após erro!');
-        } catch (fallbackError) {
-          console.error('❌ Erro no fallback do localStorage:', fallbackError);
-        }
-      } finally {
-        setIsLoading(false);
-        console.log('✅ Carregamento concluído!');
+        // Erro ao carregar do Firebase? Sem problema!
+        // Os dados já foram carregados do localStorage acima
+        console.warn('⚠️ Firebase background update falhou (mantendo dados em cache):', error);
       }
     };
 
