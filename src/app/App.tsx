@@ -18,6 +18,8 @@ import {
   loadProducts,
   savePurchases,
   loadPurchases,
+  saveMangaProgress,
+  saveBookProgress,
   forceFirebaseSync,
   migrateFromLocalStorage
 } from '@/services/firebaseService';
@@ -858,7 +860,46 @@ const App: React.FC = () => {
   };
 
   const handleSaveToFirebase = async () => {
-    console.log('🔥 === SALVANDO NO FIREBASE ===');
+    console.log('🔥 === SALVANDO TUDO NO FIREBASE ===');
+    
+    // Carregar TODOS os dados de progresso de leitura do localStorage
+    let mangaProgressList: any[] = [];
+    let bookProgressList: any[] = [];
+    
+    try {
+      // Procurar todas as chaves de manga_progress
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith('cronos_manga_progress_')) {
+          const progressStr = localStorage.getItem(key);
+          if (progressStr) {
+            try {
+              mangaProgressList.push(JSON.parse(progressStr));
+            } catch (e) {
+              console.warn(`Erro ao parsear ${key}:`, e);
+            }
+          }
+        }
+      }
+      
+      // Procurar todas as chaves de book_progress
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith('cronos_book_progress_')) {
+          const progressStr = localStorage.getItem(key);
+          if (progressStr) {
+            try {
+              bookProgressList.push(JSON.parse(progressStr));
+            } catch (e) {
+              console.warn(`Erro ao parsear ${key}:`, e);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ Erro ao carregar progresso de leitura:', e);
+    }
+    
     console.log('📊 Dados a salvar:', {
       tasks: tasks.length,
       stats: `Level ${stats.level}`,
@@ -866,7 +907,9 @@ const App: React.FC = () => {
       stories: stories.length,
       links: savedLinks.length,
       products: products.length,
-      purchases: purchases.length
+      purchases: purchases.length,
+      mangaProgress: mangaProgressList.length,
+      bookProgress: bookProgressList.length
     });
     
     // Atualizar status
@@ -894,7 +937,7 @@ const App: React.FC = () => {
       // Save everything to Firebase
       console.log('📤 Enviando dados para Firebase...');
       
-      await Promise.all([
+      const savePromises = [
         saveTasks(tasks),
         saveStats(stats),
         saveBooks(books),
@@ -902,21 +945,41 @@ const App: React.FC = () => {
         saveLinks(savedLinks),
         saveProducts(products),
         savePurchases(purchases)
-      ]);
+      ];
+      
+      // Salvar todos os progresso de leitura de manga
+      if (mangaProgressList.length > 0) {
+        console.log(`📖 Salvando ${mangaProgressList.length} progresso(s) de manga...`);
+        for (const progress of mangaProgressList) {
+          savePromises.push(saveMangaProgress(progress));
+        }
+      }
+      
+      // Salvar todos os progresso de leitura de livros
+      if (bookProgressList.length > 0) {
+        console.log(`📚 Salvando ${bookProgressList.length} progresso(s) de livros...`);
+        for (const progress of bookProgressList) {
+          savePromises.push(saveBookProgress(progress));
+        }
+      }
+      
+      await Promise.all(savePromises);
       
       console.log('✅ SUCESSO! Todos os dados salvos no Firebase!');
       setCloudStatus('synced');
       
       alert(
-        '🔥 SALVO NO FIREBASE!\n\n' +
-        `📋 Tasks: ${tasks.length}\n` +
+        '🔥 TUDO SALVO NO FIREBASE!\n\n' +
+        `📋 Tarefas: ${tasks.length}\n` +
         `⭐ Stats: Level ${stats.level} (${stats.xp} XP)\n` +
-        `📚 Books: ${books.length}\n` +
-        `📖 Stories: ${stories.length}\n` +
+        `📚 Livros: ${books.length}\n` +
+        `📖 Histórias: ${stories.length}\n` +
         `🔗 Links: ${savedLinks.length}\n` +
         `📦 Produtos: ${products.length}\n` +
-        `🛒 Compras: ${purchases.length}\n\n` +
-        'Todos os dados foram enviados para a nuvem!'
+        `🛒 Compras: ${purchases.length}\n` +
+        `🔖 Manga em leitura: ${mangaProgressList.length}\n` +
+        `📕 Livros em leitura: ${bookProgressList.length}\n\n` +
+        'Todos os dados foram enviados para a nuvem com sucesso! ✨'
       );
       
     } catch (error) {

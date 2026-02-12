@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 Monitor de Salvamento Firebase</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #4f46e5;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 24px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            font-size: 12px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4f46e5;
+        }
+        
+        .stat-card.success {
+            border-color: #10b981;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, #0f172a 100%);
+        }
+        
+        .stat-card.success .stat-value {
+            color: #10b981;
+        }
+        
+        .stat-card.warning {
+            border-color: #f59e0b;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, #0f172a 100%);
+        }
+        
+        .stat-card.warning .stat-value {
+            color: #f59e0b;
+        }
+        
+        .log-container {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            height: 500px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        
+        .log-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #1e293b;
+            font-size: 12px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        
+        .log-item:last-child {
+            border-bottom: none;
+        }
+        
+        .log-time {
+            color: #64748b;
+            min-width: 80px;
+            flex-shrink: 0;
+        }
+        
+        .log-message {
+            flex: 1;
+            word-break: break-all;
+        }
+        
+        .log-item.firebase {
+            color: #f97316;
+        }
+        
+        .log-item.success {
+            color: #10b981;
+        }
+        
+        .log-item.error {
+            color: #ef4444;
+        }
+        
+        .log-item.manga {
+            color: #8b5cf6;
+        }
+        
+        .log-item.book {
+            color: #06b6d4;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
+        }
+        
+        button.secondary {
+            background: #64748b;
+        }
+        
+        button.secondary:hover {
+            background: #475569;
+        }
+        
+        button.danger {
+            background: #ef4444;
+        }
+        
+        button.danger:hover {
+            background: #dc2626;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ef4444;
+            animation: pulse 2s infinite;
+            margin-right: 8px;
+        }
+        
+        .status-indicator.active {
+            background: #10b981;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .info-box {
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(79, 70, 229, 0.05) 100%);
+            border-left: 4px solid #4f46e5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        
+        .collection-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .collection-item {
+            padding: 10px;
+            background: #1e293b;
+            border-radius: 6px;
+            font-size: 11px;
+            border-left: 3px solid #64748b;
+        }
+        
+        .collection-item.active {
+            border-left-color: #4f46e5;
+            background: rgba(79, 70, 229, 0.1);
+        }
+        
+        .scrollbar-custom::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .scrollbar-custom::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        
+        .scrollbar-custom::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        
+        .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Monitor de Salvamento Firebase</h1>
+        
+        <div class="info-box">
+            <strong>ℹ️ Instruções:</strong><br>
+            1. Abra a app em http://localhost:5174 em <strong>outra aba</strong><br>
+            2. Faça login com <strong>EON / 0130</strong><br>
+            3. Crie/edite tarefa, livro, manga, etc<br>
+            4. Veja os salvamentos em tempo real abaixo 👇
+        </div>
+        
+        <div class="controls">
+            <button onclick="clearLogs()">🗑️ Limpar Logs</button>
+            <button class="secondary" onclick="exportLogs()">📥 Exportar</button>
+            <button class="secondary" onclick="toggleAutoScroll()">📌 Auto Scroll ON</button>
+            <button class="danger" onclick="resetStats()">🔄 Resetar Stats</button>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card success">
+                <h3>Salvamentos</h3>
+                <div class="stat-value" id="save-count">0</div>
+            </div>
+            <div class="stat-card warning">
+                <h3>Erros</h3>
+                <div class="stat-value" id="error-count">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Taxa de Sucesso</h3>
+                <div class="stat-value" id="success-rate">0%</div>
+            </div>
+            <div class="stat-card">
+                <h3>Tempo Médio</h3>
+                <div class="stat-value" id="avg-time">-ms</div>
+            </div>
+        </div>
+        
+        <div class="collection-status" id="collection-status"></div>
+        
+        <div class="log-container scrollbar-custom" id="log-container">
+            <div class="log-item" style="color: #64748b;">
+                Aguardando conexão com a aplicação...
+            </div>
+            <div class="log-item" style="color: #64748b; margin-top: 10px;">
+                Abra http://localhost:5174 em outra aba do navegador
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const stats = {
+            saves: 0,
+            errors: 0,
+            totalTime: 0,
+            logs: [],
+            collections: {
+                tasks: 0,
+                stats: 0,
+                books: 0,
+                stories: 0,
+                links: 0,
+                products: 0,
+                purchases: 0,
+                manga_progress: 0,
+                book_progress: 0
+            }
+        };
+        
+        let autoScroll = true;
+        let sessionId = 'SESSION_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        
+        // Monitorar localStorage para logs
+        setInterval(() => {
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const key = localStorage.key(i);
+                if (key && key.includes('_FIREBASE_LOG')) {
+                    try {
+                        const data = JSON.parse(localStorage.getItem(key) || '{}');
+                        const message = data.message;
+                        const type = data.type || 'info';
+                        
+                        if (message && !stats.logs.some(l => l.message === message)) {
+                            addLog(message, type);
+                            
+                            // Contar salvamentos
+                            if (message.includes('✅')) {
+                                stats.saves++;
+                                // Extrair nome da collection
+                                const collections = ['tasks', 'stats', 'books', 'stories', 'links', 'products', 'purchases', 'manga_progress', 'book_progress'];
+                                for (const col of collections) {
+                                    if (message.toLowerCase().includes(col)) {
+                                        stats.collections[col]++;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            if (message.includes('❌')) {
+                                stats.errors++;
+                            }
+                            
+                            updateStats();
+                        }
+                    } catch (e) {
+                        // Ignorar erros de parse
+                    }
+                }
+            }
+        }, 500);
+        
+        function addLog(message, type = 'info') {
+            const time = new Date().toLocaleTimeString('pt-BR');
+            const logContainer = document.getElementById('log-container');
+            
+            if (stats.logs.length === 0) {
+                logContainer.innerHTML = '';
+            }
+            
+            const logItem = document.createElement('div');
+            let className = 'log-item';
+            
+            if (message.includes('🔥')) className += ' firebase';
+            if (message.includes('✅')) className += ' success';
+            if (message.includes('❌')) className += ' error';
+            if (message.includes('📖')) className += ' manga';
+            if (message.includes('📚')) className += ' book';
+            
+            logItem.className = className;
+            logItem.innerHTML = `
+                <span class="log-time">${time}</span>
+                <span class="log-message">${escapeHtml(message)}</span>
+            `;
+            
+            logContainer.insertBefore(logItem, logContainer.firstChild);
+            
+            // Limitar a 200 logs
+            while (logContainer.children.length > 200) {
+                logContainer.removeChild(logContainer.lastChild);
+            }
+            
+            if (autoScroll) {
+                logContainer.scrollTop = 0;
+            }
+            
+            stats.logs.unshift({ time, message, type });
+        }
+        
+        function updateStats() {
+            const saveCount = document.getElementById('save-count');
+            const errorCount = document.getElementById('error-count');
+            const successRate = document.getElementById('success-rate');
+            const avgTime = document.getElementById('avg-time');
+            const total = stats.saves + stats.errors;
+            const rate = total > 0 ? ((stats.saves / total) * 100).toFixed(1) : 0;
+            
+            saveCount.textContent = stats.saves;
+            errorCount.textContent = stats.errors;
+            successRate.textContent = rate + '%';
+            
+            // Atualizar collections
+            const statusEl = document.getElementById('collection-status');
+            let html = '';
+            for (const [col, count] of Object.entries(stats.collections)) {
+                if (count > 0) {
+                    html += `<div class="collection-item active">
+                        <strong>${col}</strong>: ${count}
+                    </div>`;
+                } else {
+                    html += `<div class="collection-item">
+                        <strong>${col}</strong>: 0
+                    </div>`;
+                }
+            }
+            statusEl.innerHTML = html;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function clearLogs() {
+            document.getElementById('log-container').innerHTML = '<div class="log-item" style="color: #64748b;">Logs limpos</div>';
+            stats.logs = [];
+        }
+        
+        function exportLogs() {
+            const content = stats.logs.map(l => `[${l.time}] [${l.type.toUpperCase()}] ${l.message}`).join('\n');
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `firebase-monitor-${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+        
+        function toggleAutoScroll() {
+            autoScroll = !autoScroll;
+            const btn = event.target;
+            btn.textContent = autoScroll ? '📌 Auto Scroll ON' : '📌 Auto Scroll OFF';
+        }
+        
+        function resetStats() {
+            stats.saves = 0;
+            stats.errors = 0;
+            stats.totalTime = 0;
+            stats.collections = {
+                tasks: 0, stats: 0, books: 0, stories: 0,
+                links: 0, products: 0, purchases: 0,
+                manga_progress: 0, book_progress: 0
+            };
+            updateStats();
+        }
+        
+        // Inicializar
+        updateStats();
+        
+        console.log('%c🔥 Firebase Monitor Ativado', 'color: #f97316; font-size: 16px; font-weight: bold;');
+        console.log('%cAbra a app em http://localhost:5174 para ver os salvamentos em tempo real', 'color: #4f46e5;');
+    </script>
+</body>
+</html>
