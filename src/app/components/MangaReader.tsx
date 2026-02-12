@@ -217,10 +217,18 @@ const MangaReader: React.FC<MangaReaderProps> = ({ cloudStatus = 'synced' }) => 
       }
     };
 
-    // Salvar logo após mudança (debounce de 500ms)
-    const timer = setTimeout(saveProgress, 500);
+    // Salvar logo após mudança (debounce de 1000ms)
+    const timer = setTimeout(saveProgress, 1000);
     return () => clearTimeout(timer);
-  }, [readingState, view]);
+  }, [
+    view,
+    readingState?.manga.id,
+    readingState?.currentPage,
+    readingState?.readingMode,
+    readingState?.webtoonMode,
+    readingState?.scale,
+    readingState?.pages.length
+  ]);
 
   // VIEW: UPLOAD
   if (view === 'UPLOAD') {

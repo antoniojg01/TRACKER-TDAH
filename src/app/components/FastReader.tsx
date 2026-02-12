@@ -202,11 +202,11 @@ const FastReader: React.FC<FastReaderProps> = ({ books, onSaveBook, onDeleteBook
         }
       };
 
-      // Salvar a cada 5 segundos (debounce)
-      const timer = setTimeout(saveProgress, 5000);
+      // Salvar a cada 10 segundos (debounce aumentado)
+      const timer = setTimeout(saveProgress, 10000);
       return () => clearTimeout(timer);
     }
-  }, [currentBook?.currentPosition, currentBook?.wpm]);
+  }, [currentBook?.currentPosition]);
 
   const goToBook = (book: Book) => {
     setCurrentBook(book);

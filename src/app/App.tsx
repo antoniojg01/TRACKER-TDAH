@@ -61,6 +61,8 @@ const NEBULA_PRESETS: NebulaTheme[] = [
 ];
 
 const App: React.FC = () => {
+  type SaveTimerKey = 'tasks' | 'stats' | 'books' | 'stories' | 'links' | 'products' | 'purchases';
+
   // Login States
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
@@ -112,6 +114,28 @@ const App: React.FC = () => {
   const [selectedProductId, setSelectedProductId] = useState('');
   const [pricePaid, setPricePaid] = useState('');
   const [periodFilter, setPeriodFilter] = useState<'week' | 'month'>('month');
+
+  const saveTimersRef = useRef<Record<SaveTimerKey, ReturnType<typeof setTimeout> | null>>({
+    tasks: null,
+    stats: null,
+    books: null,
+    stories: null,
+    links: null,
+    products: null,
+    purchases: null
+  });
+
+  const scheduleSave = (key: SaveTimerKey, saveFn: () => void, localSaveFn?: () => void) => {
+    const timers = saveTimersRef.current;
+    if (timers[key]) {
+      clearTimeout(timers[key] as ReturnType<typeof setTimeout>);
+    }
+
+    timers[key] = setTimeout(() => {
+      saveFn();
+      if (localSaveFn) localSaveFn();
+    }, 800);
+  };
 
   const currentLevel = useMemo(() => LEVELS.find(l => l.level === stats.level) || LEVELS[0], [stats.level]);
   const nextLevel = useMemo(() => LEVELS.find(l => l.level === stats.level + 1), [stats.level]);
@@ -338,18 +362,22 @@ const App: React.FC = () => {
   // Save tasks to Firebase whenever they change
   useEffect(() => {
     if (!isLoading && tasks.length >= 0) {
-      saveTasks(tasks);
-      // Also save to localStorage as backup
-      localStorage.setItem('cronos_tasks', JSON.stringify(tasks));
+      scheduleSave(
+        'tasks',
+        () => saveTasks(tasks),
+        () => localStorage.setItem('cronos_tasks', JSON.stringify(tasks))
+      );
     }
   }, [tasks, isLoading]);
 
   // Save stats to Firebase whenever they change
   useEffect(() => {
     if (!isLoading) {
-      saveStats(stats);
-      // Also save to localStorage as backup
-      localStorage.setItem('cronos_stats', JSON.stringify(stats));
+      scheduleSave(
+        'stats',
+        () => saveStats(stats),
+        () => localStorage.setItem('cronos_stats', JSON.stringify(stats))
+      );
     }
   }, [stats, isLoading]);
 
@@ -451,39 +479,43 @@ const App: React.FC = () => {
   // Save books to Firebase whenever they change
   useEffect(() => {
     if (!isLoading && books.length >= 0) {
-      saveBooks(books);
+      scheduleSave('books', () => saveBooks(books));
     }
   }, [books, isLoading]);
 
   // Save links to Firebase whenever they change
   useEffect(() => {
     if (!isLoading && savedLinks.length >= 0) {
-      saveLinks(savedLinks);
+      scheduleSave('links', () => saveLinks(savedLinks));
     }
   }, [savedLinks, isLoading]);
 
   // Save stories to Firebase whenever they change
   useEffect(() => {
     if (!isLoading && stories.length >= 0) {
-      saveStories(stories);
-      // Also save to localStorage as backup
-      localStorage.setItem('cronos_stories', JSON.stringify(stories));
+      scheduleSave(
+        'stories',
+        () => saveStories(stories),
+        () => localStorage.setItem('cronos_stories', JSON.stringify(stories))
+      );
     }
   }, [stories, isLoading]);
 
   // Save products to Firebase whenever they change
   useEffect(() => {
     if (!isLoading && products.length >= 0) {
-      saveProducts(products);
+      scheduleSave('products', () => saveProducts(products));
     }
   }, [products, isLoading]);
 
   // Save purchases to Firebase whenever they change
   useEffect(() => {
     if (!isLoading && purchases.length >= 0) {
-      savePurchases(purchases);
-      // Also save to localStorage as backup
-      localStorage.setItem('cronos_purchases', JSON.stringify(purchases));
+      scheduleSave(
+        'purchases',
+        () => savePurchases(purchases),
+        () => localStorage.setItem('cronos_purchases', JSON.stringify(purchases))
+      );
     }
   }, [purchases, isLoading]);
 
